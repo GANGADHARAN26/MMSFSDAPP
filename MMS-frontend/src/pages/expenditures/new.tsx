@@ -18,8 +18,23 @@ const bases = ['Base Alpha', 'Base Bravo', 'Base Charlie'];
 // List of reasons
 const reasons = ['Training', 'Operation', 'Maintenance', 'Damaged', 'Lost', 'Other'];
 
+// Define a specific type for expenditure reasons
+export type ExpenditureReason = 'Training' | 'Operation' | 'Maintenance' | 'Damaged' | 'Lost' | 'Other';
+
 // Asset types
 const assetTypes = ['Weapon', 'Vehicle', 'Equipment', 'Ammunition'];
+
+interface ExpenditureFormValues {
+  asset: string;
+  base: string;
+  quantity: number;
+  reason: ExpenditureReason | ''; // Use ExpenditureReason, allow empty for initial state
+  expendedBy: { name: string; rank: string; id: string; };
+  expenditureDate: string;
+  operationName?: string;
+  location?: string;
+  notes?: string;
+}
 
 const ExpenditureSchema = Yup.object().shape({
   asset: Yup.string().required('Asset is required'),
@@ -28,7 +43,7 @@ const ExpenditureSchema = Yup.object().shape({
     .required('Quantity is required')
     .positive('Quantity must be positive')
     .integer('Quantity must be a whole number'),
-  reason: Yup.string().required('Reason is required'),
+  reason: Yup.string().oneOf([...reasons]).required('Reason is required'),
   expendedBy: Yup.object().shape({
     name: Yup.string().required('Name is required'),
     rank: Yup.string().required('Rank is required'),
@@ -47,6 +62,8 @@ const ExpenditureSchema = Yup.object().shape({
 const NewExpenditurePage = () => {
   const router = useRouter();
   const { user } = useAuth();
+    const { asset: assetIdFromQuery } = router.query; // Assuming asset ID can be passed via query
+
   const addNotification = useNotificationStore((state) => state.addNotification);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -103,9 +120,9 @@ const NewExpenditurePage = () => {
     }
   }, [assetId, user]);
 
-  const formik = useFormik({
+  const formik = useFormik<ExpenditureFormValues>({
     initialValues: {
-      asset: assetId || '',
+      asset: (Array.isArray(assetIdFromQuery) ? assetIdFromQuery[0] : assetIdFromQuery) || '',
       base: user?.role === 'BaseCommander' && user.assignedBase ? user.assignedBase : '',
       quantity: 1,
       reason: '',
@@ -124,8 +141,13 @@ const NewExpenditurePage = () => {
       try {
         setIsSubmitting(true);
         
+        // Prepare payload, ensuring reason is ExpenditureReason or undefined
+        const expenditurePayload = {
+          ...values,
+          reason: values.reason === '' ? undefined : values.reason,
+        };
         // Create the expenditure
-        const newExpenditure = await expenditureService.createExpenditure(values);
+        const newExpenditure = await expenditureService.createExpenditure(expenditurePayload);
         
         // Add notification
         addNotification({

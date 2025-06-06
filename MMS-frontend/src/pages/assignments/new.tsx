@@ -60,6 +60,48 @@ const NewAssignmentPage: React.FC = () => {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const { asset: assetId } = router.query;
 
+  const formik = useFormik<AssignmentFormValues>({
+    initialValues: {
+      asset: (Array.isArray(assetId) ? assetId[0] : assetId) || '',
+      base: user?.role === 'BaseCommander' && user.assignedBase ? user.assignedBase : '',
+      quantity: 1,
+      assignedTo: {
+        name: '',
+        rank: '',
+        id: '',
+      },
+      purpose: '',
+      startDate: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
+      endDate: '',
+      notes: '',
+    },
+    validationSchema: AssignmentSchema,
+    onSubmit: async (values) => {
+      try {
+        setIsSubmitting(true);
+        
+        // Create the assignment
+        const newAssignment = await assignmentService.createAssignment(values);
+        
+        // Add notification
+        addNotification({
+          type: 'success',
+          title: 'Assignment Created',
+          message: `${newAssignment.quantity} ${newAssignment.assetName} assigned to ${newAssignment.assignedTo.name}.`
+        });
+        
+        toast.success('Assignment created successfully');
+        router.push(`/assignments/${newAssignment._id}`);
+        
+      } catch (error: any) {
+        console.error('Error creating assignment:', error);
+        toast.error(error.response?.data?.error || 'Failed to create assignment');
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+  });
+
   // Check if user has permission to create assignments
   useEffect(() => {
     if (user && user.role !== 'Admin' && user.role !== 'BaseCommander') {
@@ -109,48 +151,6 @@ const NewAssignmentPage: React.FC = () => {
       fetchAssets();
     }
   }, [assetId, user, formik]);
-
-  const formik = useFormik<AssignmentFormValues>({
-    initialValues: {
-      asset: assetId || '',
-      base: user?.role === 'BaseCommander' && user.assignedBase ? user.assignedBase : '',
-      quantity: 1,
-      assignedTo: {
-        name: '',
-        rank: '',
-        id: '',
-      },
-      purpose: '',
-      startDate: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
-      endDate: '',
-      notes: '',
-    },
-    validationSchema: AssignmentSchema,
-    onSubmit: async (values) => {
-      try {
-        setIsSubmitting(true);
-        
-        // Create the assignment
-        const newAssignment = await assignmentService.createAssignment(values);
-        
-        // Add notification
-        addNotification({
-          type: 'success',
-          title: 'Assignment Created',
-          message: `${newAssignment.quantity} ${newAssignment.assetName} assigned to ${newAssignment.assignedTo.name}.`
-        });
-        
-        toast.success('Assignment created successfully');
-        router.push(`/assignments/${newAssignment._id}`);
-        
-      } catch (error: any) {
-        console.error('Error creating assignment:', error);
-        toast.error(error.response?.data?.error || 'Failed to create assignment');
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-  });
 
   // Update selected asset when asset changes
   useEffect(() => {

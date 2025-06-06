@@ -1,3 +1,4 @@
+export type ExpenditureReason = 'Training' | 'Operation' | 'Maintenance' | 'Damaged' | 'Lost' | 'Other';
 export interface Expenditure {
   _id: string;
   asset: string;
@@ -5,7 +6,7 @@ export interface Expenditure {
   assetType: string;
   base: string;
   quantity: number;
-  reason: 'Training' | 'Operation' | 'Maintenance' | 'Damaged' | 'Lost' | 'Other';
+ reason: ExpenditureReason;
   authorizedBy: {
     _id: string;
     username: string;

@@ -94,7 +94,7 @@ const NewTransferPage = () => {
 
   const formik = useFormik({
     initialValues: {
-      asset: assetId || '',
+      asset: (Array.isArray(assetId) ? assetId[0] : assetId) || '',
       fromBase: user?.role === 'LogisticsOfficer' && user.assignedBase ? user.assignedBase : '',
       toBase: '',
       quantity: 1,

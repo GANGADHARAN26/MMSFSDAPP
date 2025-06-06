@@ -29,6 +29,7 @@ export const assetService = {
     sortOrder?: 'asc' | 'desc';
     limit?: number;
     skip?: number;
+    status?: string;
   }): Promise<AssetResponse> => {
     return get<AssetResponse>('/assets', { params });
   },
